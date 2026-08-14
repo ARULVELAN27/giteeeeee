@@ -53,17 +53,21 @@ jobs:
               stream: false
             }' > request.json
 
-          curl -sS \
+                    echo "Calling Trinity..."
+
+          HTTP_STATUS=$(curl -sS \
+            -o trinity_response.json \
+            -w "%{http_code}" \
             -X POST \
             "https://api.arcee.ai/api/v1/chat/completions" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer ${ARCEE_API_KEY}" \
-            --data @request.json \
-            > trinity_response.json
+            --data @request.json)
 
-          echo "===== TRINITY RESPONSE ====="
+          echo "HTTP status: $HTTP_STATUS"
+          echo "===== RAW TRINITY RESPONSE ====="
 
-          jq -r '.choices[0].message.content' trinity_response.json
+          jq '.' trinity_response.json
 
       - name: Send Telegram message
         env:
