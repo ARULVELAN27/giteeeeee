@@ -11,5 +11,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test GitHub Actions
-        run: echo "GitHub Actions is working!"
+      - name: Test Telegram secret
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
+            echo "❌ Telegram token is NOT available"
+            exit 1
+          fi
+
+          echo "✅ Telegram token is available"
+          echo "Token length: ${#TELEGRAM_BOT_TOKEN}"
