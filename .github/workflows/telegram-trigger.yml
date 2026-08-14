@@ -11,14 +11,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Test Telegram secret
+      - name: Send Telegram message
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ -z "$TELEGRAM_BOT_TOKEN" ]; then
-            echo "❌ Telegram token is NOT available"
-            exit 1
-          fi
-
-          echo "✅ Telegram token is available"
-          echo "Token length: ${#TELEGRAM_BOT_TOKEN}"
+          curl -sS \
+            -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=✅ GitHub Actions is connected to Telegram!"
