@@ -22,11 +22,48 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
-          echo "Fetching Issue #$ISSUE_NUMBER..."
-
           gh issue view "$ISSUE_NUMBER" \
             --repo "$GITHUB_REPOSITORY" \
-            --json number,title,body,state
+            --json number,title,body,state \
+            > issue.json
+
+          echo "Issue retrieved:"
+          cat issue.json
+
+      - name: Ask Trinity Large Preview
+        env:
+          ARCEE_API_KEY: ${{ secrets.ARCEE_API_KEY }}
+        run: |
+          ISSUE_JSON=$(cat issue.json)
+
+          jq -n \
+            --arg issue "$ISSUE_JSON" \
+            '{
+              model: "trinity-large-preview",
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a senior software engineer. Analyze GitHub issues carefully. Do not write code yet. Produce a concise implementation plan with files to create or modify, design decisions, testing strategy, and potential risks."
+                },
+                {
+                  role: "user",
+                  content: ("Analyze this GitHub issue:\n\n" + $issue)
+                }
+              ],
+              stream: false
+            }' > request.json
+
+          curl -sS \
+            -X POST \
+            "https://api.arcee.ai/api/v1/chat/completions" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${ARCEE_API_KEY}" \
+            --data @request.json \
+            > trinity_response.json
+
+          echo "===== TRINITY RESPONSE ====="
+
+          jq -r '.choices[0].message.content' trinity_response.json
 
       - name: Send Telegram message
         env:
@@ -37,4 +74,4 @@ jobs:
             -X POST \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=📋 Retrieved GitHub Issue #${{ inputs.issue_number }}"
+            --data-urlencode "text=🤖 Trinity analyzed GitHub Issue #${{ inputs.issue_number }}"
