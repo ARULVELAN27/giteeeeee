@@ -10,17 +10,23 @@ on:
         type: string
 
 jobs:
-  test:
+  process-issue:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Show selected issue
+      - name: Get GitHub issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
-          echo "Repository: ${{ github.repository }}"
-          echo "Issue number: ${{ inputs.issue_number }}"
+          echo "Fetching Issue #$ISSUE_NUMBER..."
+
+          gh issue view "$ISSUE_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --json number,title,body,state
 
       - name: Send Telegram message
         env:
@@ -31,4 +37,4 @@ jobs:
             -X POST \
             "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=🚀 Started processing GitHub Issue #${{ inputs.issue_number }}"
+            --data-urlencode "text=📋 Retrieved GitHub Issue #${{ inputs.issue_number }}"
